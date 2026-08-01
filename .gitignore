@@ -1,0 +1,8 @@
+# === Données personnelles / RGPD — NE JAMAIS publier ===
+# Cartes prospects internes ("verrouillées") : adresses de prospects intégrées
+cartes/
+
+# === Fichiers temporaires OS ===
+Thumbs.db
+.DS_Store
+~$*

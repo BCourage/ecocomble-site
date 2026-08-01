@@ -1,0 +1,33 @@
+# robots.txt — ecocomble.fr
+
+# Tous les robots
+User-agent: *
+Allow: /
+Disallow: /cartes/
+
+# Moteurs génératifs / IA — accès explicitement autorisé (GEO)
+User-agent: GPTBot
+Allow: /
+Disallow: /cartes/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /cartes/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /cartes/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /cartes/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /cartes/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /cartes/
+
+Sitemap: https://www.ecocomble.fr/sitemap.xml
