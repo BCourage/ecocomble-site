@@ -995,10 +995,15 @@ function _updateCanonical(page){
 }
 function updateMeta(page){
   const M={
-    home:['Écocomble — Isolation des combles | Financé par les fournisseurs d\'énergie','Soufflage de combles perdus, financé par les CEE. RGE Qualibat. 9 départements du Massif Central.'],
-    realisations:['Réalisations — Chantiers d\'isolation | Écocomble','Nos chantiers d\'isolation de combles : avant/après et témoignages clients.'],
-    zones:['Zone d\'intervention — 9 départements | Écocomble','9 départements en zone H1. Coefficient CEE maximum.'],
-    contact:['Contact — Écocomble | Devis gratuit','Rappel sous 30 min en journée. Visite et devis gratuits.'],
+    /* Ces descriptions ÉCRASENT la balise <meta> du document au changement de
+       page. Elles doivent donc être aussi soignées qu'elle : la version courte
+       qui vivait ici ramenait la description d'accueil de 158 à 97 caractères,
+       soit un tiers de la vitrine perdu dans les résultats Google. Viser 150 à
+       160 caractères, au-delà la fin est coupée. */
+    home:['Écocomble — Isolation des combles | Financé par les fournisseurs d\'énergie','Isolation des combles perdus par soufflage, financée par les fournisseurs d\'énergie via les CEE. 1€ symbolique, RGE Qualibat. 9 départements du Massif Central.'],
+    realisations:['Réalisations — Chantiers d\'isolation | Écocomble','Nos chantiers d\'isolation de combles perdus en Auvergne et Bourgogne : photos avant/après, témoignages clients et économies constatées. Devis gratuit.'],
+    zones:['Zone d\'intervention — 9 départements | Écocomble','Nous intervenons sur 9 départements du Massif Central, tous en zone climatique H1 : le coefficient CEE y est maximum, donc votre reste à charge minimum.'],
+    contact:['Contact — Écocomble | Devis gratuit','Rappel sous 30 minutes en journée. Visite technique et devis gratuits, sans engagement. Isolation des combles perdus financée par les CEE.'],
   };
   _updateCanonical(page);
   const d=DEPTS.find(d=>page==='dept-'+d.num);
@@ -1035,7 +1040,43 @@ function fnext(from){
   setTimeout(()=>{prev.style.cssText='';prev.classList.remove('active');fc=from+1;const nxt=document.getElementById('fs'+fc);if(nxt){nxt.classList.add('active');animIn(nxt);}udTk(fc);},220);
 }
 function fpick(el,name){document.querySelectorAll(`.radio`).forEach(r=>{if(r.querySelector(`input[name="${name}"]`))r.classList.remove('sel');});el.classList.add('sel');el.querySelector('input').checked=true;setTimeout(()=>{if(name==='fst')fnext(2);if(name==='flo')fnext(3);},360);}
-function fsub(e){e.preventDefault();if(document.getElementById('hp-url')?.value){return;}const _cons=document.getElementById('fconsent');if(_cons&&!_cons.checked){_cons.focus();return;}const nm=document.getElementById('fnm'),nm2=document.getElementById('fnm2'),tel=document.getElementById('ftel');let _err=false;[nm,nm2,tel].forEach(f=>{if(!f?.value.trim()){f?.classList.add('err');setTimeout(()=>f?.classList.remove('err'),700);_err=true;}});if(_err)return;
+/* ══ GARDE-FOUS DU FORMULAIRE ══
+   L'URL du webhook est forcément visible : le site est statique, il n'a pas de
+   secret à garder. N'importe qui peut donc lui envoyer des leads, et derrière
+   il n'y a aucun filtre — chaque envoi crée un contact HubSpot, une affaire et
+   un e-mail, jusqu'à 100 par minute.
+   Ce qui suit ne remplace pas une protection serveur : ça arrête les doubles
+   clics et les saisies aberrantes, pas un attaquant décidé — celui-là poste
+   directement sur le webhook sans jamais exécuter cette page. La vraie barrière
+   reste à poser côté Make.
+
+   Pas de piège temporel ici, volontairement : refuser un envoi « trop rapide »
+   n'arrête aucun robot sérieux, mais bloquerait en silence le visiteur dont le
+   navigateur pré-remplit le formulaire. Un lead perdu sans message coûte plus
+   cher que le spam qu'on aurait évité. */
+const _ATTENTE_ENTRE_ENVOIS_MS = 60000;
+
+function _dejaEnvoye(){
+  try{ const t = +(localStorage.getItem('ec_dernier_envoi')||0);
+       return t && Date.now() - t < _ATTENTE_ENTRE_ENVOIS_MS; }catch(_){ return false; }
+}
+function _marquerEnvoi(){ try{ localStorage.setItem('ec_dernier_envoi', Date.now()); }catch(_){} }
+/* Un numéro français tient en 10 chiffres, espaces et points admis. On refuse
+   « 0000000000 » et consorts : c'est la signature d'un remplissage automatique. */
+function _telValide(v){
+  const c = (v||'').replace(/[^0-9+]/g,'').replace(/^\+33/,'0');
+  return /^0[1-9][0-9]{8}$/.test(c) && !/^0[1-9](\d)\1{7}$/.test(c);
+}
+function _cpValide(v){ return !v || /^[0-9]{5}$/.test(v.trim()); }
+
+function fsub(e){e.preventDefault();if(document.getElementById('hp-url')?.value){return;}
+  if(_dejaEnvoye()){return;}
+  const _cons=document.getElementById('fconsent');if(_cons&&!_cons.checked){_cons.focus();return;}const nm=document.getElementById('fnm'),nm2=document.getElementById('fnm2'),tel=document.getElementById('ftel');let _err=false;[nm,nm2,tel].forEach(f=>{if(!f?.value.trim()){f?.classList.add('err');setTimeout(()=>f?.classList.remove('err'),700);_err=true;}});
+  const _cpch=document.getElementById('fcp');
+  if(!_telValide(tel?.value)){tel?.classList.add('err');setTimeout(()=>tel?.classList.remove('err'),700);_err=true;}
+  if(!_cpValide(_cpch?.value)){_cpch?.classList.add('err');setTimeout(()=>_cpch?.classList.remove('err'),700);_err=true;}
+  if(_err)return;
+  _marquerEnvoi();
   document.getElementById('eform').style.display='none';document.getElementById('s-tk').style.display='none';document.querySelector('.fc-h').style.display='none';document.getElementById('f-ok').style.display='block';
   const _cp=document.getElementById('fcp')?.value||'';
   const _st=document.querySelector('.radio.sel input[name="fst"]')?.closest('.radio')?.textContent?.trim().replace(/^[^A-Za-zÀ-ÿ]+/,'')||'';
