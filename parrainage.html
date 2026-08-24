@@ -195,6 +195,10 @@ tarteaucitron.user.googletagmanagerId='GTM-NJM6WDX3';
 </section>
 
 <script>
+// Webhook du scénario Make « Écocomble Parrainage — Formulaire → CRM » (hook 3587490).
+// À NE PAS confondre avec celui des Leads (autre scénario, autre forme de données) :
+// une confusion des deux a déjà fait perdre des recommandations en silence.
+var PARRAINAGE_WEBHOOK_URL = "https://hook.eu1.make.com/imoutuexq39infuga6bfwzfh36yzkovp";
 function paSend(){
   var pn=document.getElementById('pa-pnom').value.trim();
   var pt=document.getElementById('pa-ptel').value.trim();
@@ -205,12 +209,19 @@ function paSend(){
   if(!pn||!pt||!fn||!ft){err.textContent='Merci de compléter vos coordonnées et celles de votre filleul.';err.style.display='block';return;}
   if(!rgpd){err.textContent='Merci de confirmer l\'accord de votre proche.';err.style.display='block';return;}
   err.style.display='none';
+  // Le texte de la mention est lu depuis la page, pas recopié : c'est le texte
+  // réellement montré ce jour-là qui doit être figé côté serveur, jamais une
+  // seconde version qui pourrait diverger de celle affichée ici.
+  var mentionEl=document.getElementById('pa-rgpd').closest('label').querySelector('span');
+  var mention=mentionEl?mentionEl.textContent.trim().replace(/\s+/g,' '):'';
   var payload={type_contact:'parrainage',
     parrain_nom:pn,parrain_telephone:pt,
     nom:fn,prenom:'',telephone:ft,cp:'',
-    filleul_ville:document.getElementById('pa-fville').value.trim(),
+    ville:document.getElementById('pa-fville').value.trim(),
+    consentement_declare:rgpd,
+    mention_validee:mention,
     source:'site_ecocomble_parrainage',date_soumission:new Date().toISOString()};
-  try{fetch(MAKE_WEBHOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});}catch(e){}
+  try{fetch(PARRAINAGE_WEBHOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});}catch(e){}
   if(window.dl){dl.push({event:'lead_submitted',source:'parrainage',page:'parrainage'});}
   document.getElementById('pa-form').style.display='none';
   document.getElementById('pa-ok').style.display='block';
@@ -261,61 +272,5 @@ let exitShown=false;try{if(Date.now()-(+localStorage.getItem('eco_exit_ts')||0)<
 document.addEventListener('mouseleave',e=>{if(e.clientY<0&&!exitShown){exitShown=true;try{localStorage.setItem('eco_exit_ts',Date.now());}catch(_){}const m=document.getElementById('exit-m');if(m){m.style.display='flex';track('exit_intent_shown');}}});
 function closeExit(){const m=document.getElementById('exit-m');if(m)m.style.display='none';}
 document.querySelectorAll('details').forEach(d=>{d.addEventListener('toggle',()=>{const si=d.querySelector('.si');if(si)si.style.transform=d.open?'rotate(45deg)':'none';});});
-</script>
-<script>
-/*
-  BRANCHEMENT BACKEND — À FAIRE AVANT MISE EN LIGNE
-  ===================================================
-  Ce formulaire n'est PAS ENCORE CONNECTÉ à Make.com.
-  C'est le point bloquant déjà identifié (formulaire sans backend = leads perdus).
-  1) Crée un scénario Make.com démarrant par "Webhook > Custom webhook"
-  2) Colle l'URL générée ci-dessous à la place de MAKE_WEBHOOK_URL
-  3) Enchaîne dans Make : créer un Deal HubSpot + notification SMS/email
-  Tant que l'étape 2 n'est pas faite, le formulaire affiche une erreur explicite
-  au lieu d'échouer silencieusement — volontaire, pour qu'aucun lead ne disparaisse sans que tu le saches.
-*/
-const MAKE_WEBHOOK_URL = "https://hook.eu1.make.com/z2i2967istsejso4wxthy3fvwtsoeqfg";
-
-const rform = document.getElementById('contact-real-form');
-const rbtn = document.getElementById('submit-real-btn');
-const rmsgOk = document.getElementById('msg-ok');
-const rmsgErr = document.getElementById('msg-err');
-
-rform.addEventListener('submit', async function(e){
-  e.preventDefault();
-  rmsgOk.style.display = 'none';
-  rmsgErr.style.display = 'none';
-
-  if (MAKE_WEBHOOK_URL.indexOf('REMPLACER') === 0) {
-    console.warn('Formulaire non connecté : MAKE_WEBHOOK_URL doit être configurée.');
-    rmsgErr.style.display = 'block';
-    return;
-  }
-
-  const data = Object.fromEntries(new FormData(rform).entries());
-  data.source = 'site_ecocomble_contact';
-  data.date_soumission = new Date().toISOString();
-
-  rbtn.disabled = true;
-  rbtn.textContent = 'Envoi en cours...';
-
-  try {
-    const res = await fetch(MAKE_WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) throw new Error('Réponse serveur invalide');
-    track('lead_submitted', {source: 'contact_page'});
-    rmsgOk.style.display = 'block';
-    rform.reset();
-  } catch (err) {
-    console.error(err);
-    rmsgErr.style.display = 'block';
-  } finally {
-    rbtn.disabled = false;
-    rbtn.textContent = 'Envoyer ma demande →';
-  }
-});
 </script>
 </body></html>
