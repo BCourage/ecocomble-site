@@ -1,0 +1,53 @@
+# Déploiement automatique du site vers l'hébergement Infomaniak.
+#
+# Déclenché à chaque push sur `main` (donc à chaque fusion de PR), ou
+# manuellement depuis l'onglet Actions de GitHub (bouton "Run workflow").
+#
+# Les identifiants FTP ne sont JAMAIS dans ce fichier : ils sont lus depuis
+# les "Secrets" du dépôt (Settings → Secrets and variables → Actions) :
+#   - FTP_SERVER    : l'hôte FTP Infomaniak (ex. ftp.votredomaine.fr)
+#   - FTP_USERNAME  : le nom d'utilisateur FTP
+#   - FTP_PASSWORD  : le mot de passe FTP
+#
+# Le premier déploiement téléverse tout le site ; les suivants n'envoient
+# que les fichiers réellement modifiés (synchronisation incrémentale).
+
+name: Déploiement Infomaniak
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-infomaniak
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Envoyer les fichiers par FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          # Racine du dépôt = racine du site.
+          local-dir: ./
+          # Dossier cible sur le serveur. Par défaut : le dossier d'accueil
+          # du compte FTP. Si ton compte FTP n'est pas déjà positionné sur la
+          # racine web du site, remplace ./ par le chemin voulu
+          # (ex. /web/ ou /sites/ecocomble.fr/), en gardant le / final.
+          server-dir: ./
+          # Ne pas envoyer les fichiers propres au dépôt / à CI.
+          exclude: |
+            **/.git*
+            **/.git*/**
+            .github/**
+            **/README*
+            **/.DS_Store
