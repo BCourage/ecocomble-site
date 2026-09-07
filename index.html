@@ -1111,7 +1111,7 @@ function pickH(el,v){document.querySelectorAll('.h-pc').forEach(p=>p.classList.r
 function pickFP(el,v){document.querySelectorAll('.fp-p').forEach(p=>p.classList.remove('on'));el.classList.add('on');el.querySelector('input').checked=true;cfp=v;calcUpdate();track('calc_profile',{v});}
 function initHome(){fc=1;const sl=document.getElementById('sl-s');if(sl){sl.style.setProperty('--p',(80-20)/(200-20)*100+'%');calcUpdate();}}
 function ctaSend(){if([...document.querySelectorAll('.hp-cta')].some(h=>h.value))return;const _cc=document.getElementById('c-tel')?.closest('.cta-bar')?.querySelector('.cta-consent-cb');if(_cc&&!_cc.checked){_cc.focus();return;}const tel=document.getElementById('c-tel');if(!tel||!tel.value.trim()){tel?.focus();return;}const btn=document.querySelector('.cta-btn');if(btn){btn.textContent='✓ Envoyé !';btn.style.background='rgba(255,255,255,.9)';btn.disabled=true;}
-  sendLead({prenom:'',nom:'',telephone:tel.value.trim(),email:'',cp:'',statut_occupation:'',type_logement:'',consentement:true,consentement_texte:(document.querySelector('.cta-consent-cb')?.closest('label')?.innerText||'').trim(),source:'site_ecocomble_cta_final',date_soumission:new Date().toISOString()});
+  sendLead({type_contact:'rappel',prenom:'',nom:'',telephone:tel.value.trim(),email:'',cp:'',statut_occupation:'',type_logement:'',consentement:true,consentement_texte:(document.querySelector('.cta-consent-cb')?.closest('label')?.innerText||'').trim(),source:'site_ecocomble_cta_final',date_soumission:new Date().toISOString()});
   track('lead_submitted',{source:'cta_final'});if(typeof fbq!=='undefined')fbq('track','Lead');}
 
 /* ══════════════════════════════════════
